@@ -70,6 +70,16 @@ $ cp config{.sample,}.php
 
 Now configure your database connection in `config.php`. You should now be able to download this file through http://your.server/weatherstation/README.md
 
+## Included Dependencies
+
+* [Chart.js v2.9.3](https://github.com/chartjs/Chart.js/tree/v2.9.3)
+* [bootstrap v4.4.1](https://github.com/twbs/bootstrap/tree/v4.4.1)
+* [chartjs-plugin-zoom v0.7.5](https://github.com/chartjs/chartjs-plugin-zoom/tree/v0.7.5)
+* [Hammer.JS v2.0.8](https://github.com/hammerjs/hammer.js/tree/v2.0.8)
+* [jQuery v3.4.1](https://github.com/jquery/jquery/tree/3.4.1)
+* [moment.js v2.24.0](https://github.com/moment/moment/tree/2.24.0)
+* [popper.js v2.0.6](https://github.com/popperjs/popper-core/tree/v2.0.6)
+
 ## TODO
 
 * Initializing database tables
