@@ -31,6 +31,8 @@ $ sudo mysql
 > quit;
 ```
 
+At the moment you need to create the tables manually using the file `database_init.sql` inside this repository.
+
 ### PHP and Apache
 
 ```bash
@@ -70,6 +72,7 @@ Now configure your database connection in `config.php`. You should now be able t
 
 ## TODO
 
+* Initializing database tables
 * Configuration interface for clients and data types
 * Support more database endpoints
 * Client authentication
