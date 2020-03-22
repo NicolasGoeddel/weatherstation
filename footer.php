@@ -5,6 +5,8 @@
         <script src="<?=$baseUrl;?>/js/chartjs-plugin-zoom.min.js"></script>
         <script src="<?=$baseUrl;?>/js/popper.min.js"></script>
         <script src="<?=$baseUrl;?>/js/bootstrap.min.js"></script>
+
+        <script src="<?=$baseUrl;?>/js/gui.js"></script>
         <script src="<?=$baseUrl;?>/js/app.js"></script>
     </body>
 </html>

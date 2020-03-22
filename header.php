@@ -13,6 +13,7 @@
 		<link rel="stylesheet" href="<?=$baseUrl;?>/css/bootstrap.min.css">
 		<link rel="stylesheet" href="<?=$baseUrl;?>/css/Chart.min.css" >
 		<link rel="stylesheet" href="<?=$baseUrl;?>/css/styles.css">
+
 		<script>
 			var baseUrl="<?=$baseUrl;?>";
 		</script>

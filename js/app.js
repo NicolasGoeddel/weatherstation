@@ -101,6 +101,7 @@ function updateChart({chart}) {
 function createGraphs() {
   $('.datachart').each(function(index, value) {
     var type = $(value).attr('data-type');
+    var dataColor = $(value).attr('data-color') || "#3e95cd";
 
     graphs[type] = new Chart(value, {
       type: 'line',
@@ -109,14 +110,17 @@ function createGraphs() {
           data: allData['timestamp'].map(function(e, i) {
             return {'x': e, 'y': allData[type].data[i]};}),
           label: type + " in " + allData[type].unit,
-          borderColor: "#3e95cd",
-          fill: false
+          borderColor: dataColor,
+          fill: 'origin',
+          pointRadius: 0,
+          lineTension: 0.3
         }]
       },
       options: {
         typename: type,
         animation: false,
         responsive: true,
+        maintainAspectRatio: false,
         title: {
           display: false,
         },
@@ -126,14 +130,15 @@ function createGraphs() {
             type: 'time',
             distribution: 'linear',
             scaleLabel: {
-              display: true,
+              display: false,
               labelString: "Time"
             },
             ticks: {
+              fontSize: 9,
               major: {
                 enabled: true,
                 fontStyle: 'bold',
-                fontSize: 14,
+                fontSize: 11,
                 callback: function(value, index, values) {
                   let majorDiff = null;
                   for (i = index - 1; i >= 0; i--) {
@@ -144,8 +149,11 @@ function createGraphs() {
                   }
 
                   let m = moment(values[index].value);
+                  if (m.hours() == 0 && m.minutes() == 0 && m.seconds() == 0) {
+                    return m.format('L');
+                  }
                   if (majorDiff === null) {
-                    return m.format('LL LT');
+                    return m.format('L LT');
                   }
                   if (majorDiff < 60) {
                     return m.format('LTS');
@@ -176,7 +184,6 @@ function createGraphs() {
         tooltips: {
           enabled: true,
           mode: 'nearest',
-          axis: 'x',
           intersect: false,
           callbacks: {
             label: function(tooltipItems, data) {
@@ -243,4 +250,22 @@ $(document).ready(function() {
       updateChart(graphs[g]);
     }
   }, 20000);
+
+  $(document).keydown(function(event) {
+    if (event.shiftKey) {
+      for (var g in graphs) {
+        graphs[g].options.plugins.zoom.zoom.enabled = true;
+        console.log('enabled');
+      }
+    }
+  });
+
+  $(document).keyup(function(event) {
+    if (event.shiftKey) {
+      for (var g in graphs) {
+        graphs[g].options.plugins.zoom.zoom.enabled = false;
+        console.log('disabled');
+      }
+    }
+  });
 });

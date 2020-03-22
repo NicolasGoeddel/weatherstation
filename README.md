@@ -80,6 +80,11 @@ Now configure your database connection in `config.php`. You should now be able t
 * [moment.js v2.24.0](https://github.com/moment/moment/tree/2.24.0)
 * [popper.js v2.0.6](https://github.com/popperjs/popper-core/tree/v2.0.6)
 
+## Ideas and tips derived from
+
+* https://bootstrapious.com/p/bootstrap-sidebar
+* [Stackoverflow.com - Grouping into interval of 5 minutes within a time range](https://stackoverflow.com/a/4345308/4239139)
+
 ## TODO
 
 * Initializing database tables
@@ -87,4 +92,4 @@ Now configure your database connection in `config.php`. You should now be able t
 * Support more database endpoints
 * Client authentication
 * User and roles management
-* Create averages per user definable date ranges
+* Create averages/min/max per user definable date ranges
