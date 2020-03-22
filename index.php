@@ -40,15 +40,18 @@ include('header.php');
                 </div>
             </div>
             <div class="row">
-                <div class="chart-wrapper col-sm-12 col-md-12 col-lg-12">
+                <div class="chart-wrapper col-11">
                     <canvas class="datachart" data-color="#ff5f5f" data-type="temperature" height="300px" ></canvas>
                 </div>
-                <div class="chart-wrapper col-sm-12 col-md-12 col-lg-12">
+                <div class="col-1"></div>
+                <div class="chart-wrapper col-11">
                     <canvas class="datachart" data-color="#5f5fff" data-type="humidity" height="300px" ></canvas>
                 </div>
-                <div class="chart-wrapper col-sm-12 col-md-12 col-lg-12">
+                <div class="col-1"></div>
+                <div class="chart-wrapper col-11">
                     <canvas class="datachart" data-color="#3fff3f" data-type="pressure"  height="300px" ></canvas>
                 </div>
+                <div class="col-1"></div>
             </div>
         </div>
     </div>
