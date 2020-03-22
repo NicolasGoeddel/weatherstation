@@ -32,11 +32,20 @@ include('header.php');
             <div id="chart-options-header" class="row justify-content-center">
                 <div class="chart-options col-auto">
                         Intervals:
-                        <button type="button" data-interval="1w" class="interval-select btn btn-light">1w</button>
-                        <button type="button" data-interval="1d" class="interval-select btn btn-light">1d</button>
-                        <button type="button" data-interval="1h" class="interval-select btn btn-light">1h</button>
-                        <button type="button" data-interval="*"  class="interval-select btn btn-light">all</button>
-                        <button type="button" data-interval="auto"  class="interval-select btn btn-light">auto</button>
+                        <button type="button" data-interval="1w"   class="interval-select btn btn-light">1w</button>
+                        <button type="button" data-interval="1d"   class="interval-select btn btn-light">1d</button>
+                        <button type="button" data-interval="6h"   class="interval-select btn btn-light">6h</button>
+                        <button type="button" data-interval="1h"   class="interval-select btn btn-light">1h</button>
+                        <button type="button" data-interval="15m"  class="interval-select btn btn-light">15m</button>
+                        <button type="button" data-interval="all"  class="interval-select btn btn-light active">all</button>
+                        <button type="button" data-interval="auto" class="interval-select btn btn-light">auto</button>
+                </div>
+                <div class="chart-options col-auto">
+                        Range:
+                        <button type="button" data-range="1m" class="range-select btn btn-light">1m</button>
+                        <button type="button" data-range="1w" class="range-select btn btn-light">1w</button>
+                        <button type="button" data-range="1d" class="range-select btn btn-light">1d</button>
+                        <button type="button" data-range="1h" class="range-select btn btn-light">1h</button>
                 </div>
             </div>
             <div class="row">

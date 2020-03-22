@@ -84,6 +84,7 @@ Now configure your database connection in `config.php`. You should now be able t
 
 * https://bootstrapious.com/p/bootstrap-sidebar
 * [Stackoverflow.com - Grouping into interval of 5 minutes within a time range](https://stackoverflow.com/a/4345308/4239139)
+* [startsWith() and endsWith() functions in PHP](https://stackoverflow.com/a/834355/4239139)
 
 ## TODO
 
@@ -92,4 +93,5 @@ Now configure your database connection in `config.php`. You should now be able t
 * Support more database endpoints
 * Client authentication
 * User and roles management
-* Create averages/min/max per user definable date ranges
+* ~~Create averages/min/max per user definable date ranges~~
+* Show standard deviation using [chartjs-plugin-error-bars](https://github.com/datavisyn/chartjs-plugin-error-bars)

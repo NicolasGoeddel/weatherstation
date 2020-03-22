@@ -79,7 +79,9 @@ if ($module == "station") {
         $startTime = parseDate($_GET['start']);
         $endTime = parseDate($_GET['end']);
         $types = get($_GET['types']);
-        jsonOut($station->getData($types, $startTime, $endTime));
+        $subTypes = get($_GET['subtypes']);
+        $stepSize = get($_GET['stepsize']);
+        jsonOut($station->getData($types, $startTime, $endTime, $stepSize, $subTypes));
         exit();
     }
 } else {

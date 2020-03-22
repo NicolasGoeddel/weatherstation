@@ -34,6 +34,16 @@ function getData(config, success) {
     data.types = config.types;
   }
 
+  if (config.subtypes instanceof Array) {
+    data.subtypes = config.subtypes.join(',');
+  } else if (typeof(config.subtypes) === 'string') {
+    data.subtypes = config.subtypes;
+  }
+
+  if (typeof(config.stepsize) === 'string') {
+    data.stepsize = config.stepsize;
+  }
+
   $.ajax({
     type: "GET",
     url: baseUrl + "/api.php",
@@ -47,7 +57,71 @@ function getData(config, success) {
   });
 };
 
+function reloadChart({chart}) {
+  let meta = chart.getDatasetMeta(0);
+  let typename = chart.options.typename;
+  let typecolor = chart.options.typecolor;
+
+  let axis = chart.scales[meta.xAxisID];
+  let timestamps = axis._timestamps.data;
+
+  let subtypes = ['data'];
+  let stepsize = '1';
+  if (selectedInterval === 'all' || selectedInterval === '') {
+    stepsize = '1';
+    subtypes = ['data'];
+  } else if (selectedInterval === 'auto') {
+    //todo
+  } else {
+    stepsize = selectedInterval;
+    subtypes = ['data', 'min', 'max'];
+  }
+
+  oldAxis = {min: axis.min, max: axis.max};
+
+  getData({
+    station: selectedStation,
+    start: moment(axis.min),
+    end: moment(axis.max),
+    types: typename,
+    subtypes: subtypes,
+    stepsize: selectedInterval
+  }, function(data) {
+    chart.data.datasets = subtypes.map(function(subtype, index) {
+      let fill = false;
+      if (subtype == 'max') {
+        fill = subtypes.indexOf('min');
+      } else if (subtype == 'data' && subtypes.length == 1) {
+        fill = 'origin';
+      }
+      return {
+        data: data['timestamp'].map(function(e, i) {
+          return {
+            x : e,
+            y : data[typename][subtype][i]
+          }
+        }),
+        pointRadius: subtype === 'data' && subtypes.length > 1 ? 3 : 0,
+        lineTension: 0.3,
+        borderColor: typecolor,
+        borderWidth: subtype === 'data' ? 3 : 1,
+        fill: fill,
+        subtype: subtype
+      }
+    });
+    chart.update();
+    /*let meta = chart.getDatasetMeta(0);
+    chart.scales[meta.xAxisID].min = oldAxis.min;
+    chart.scales[meta.xAxisID].max = oldAxis.max;
+    chart.update();
+    console.log(oldAxis); */
+  })
+};
+
 function updateChart({chart}) {
+
+  reloadChart(chart);
+  return;
 
   let meta = chart.getDatasetMeta(0);
   let typename = chart.options.typename;
@@ -59,7 +133,7 @@ function updateChart({chart}) {
   if (axis.max > data.max) {
     // Es wurde nach links verschoben, d.h. rechts fehlen jetzt Daten.
     getData({
-      station: 1,
+      station: selectedStation,
       start: moment(data.max + 1000),
       end: moment(axis.max),
       types: typename
@@ -118,9 +192,13 @@ function createGraphs() {
       },
       options: {
         typename: type,
+        typecolor: dataColor,
         animation: false,
         responsive: true,
         maintainAspectRatio: false,
+        legend: {
+          display: false
+        },
         title: {
           display: false,
         },
@@ -184,10 +262,14 @@ function createGraphs() {
         tooltips: {
           enabled: true,
           mode: 'nearest',
+          axis: 'x',
           intersect: false,
           callbacks: {
-            label: function(tooltipItems, data) {
-              return tooltipItems.yLabel + " " + allData[type].unit;
+            label: function(tooltipItem, data) {
+              return data.datasets[tooltipItem.datasetIndex].subtype + ": " + tooltipItem.yLabel.toFixed(2) + " " + allData[type].unit;
+            },
+            title: function(tooltipItems, data) {
+              return moment(tooltipItems[0].xLabel).format("LL LTS");
             }
           }
         },
@@ -235,8 +317,8 @@ $(document).ready(function() {
   moment.locale(locale);
 
   getData({
-    station: 1,
-    start: moment().subtract(1, 'days'),
+    station: selectedStation,
+    start: moment().subtract(10, 'days'),
     end: moment().add(1, 'days')
   },
   function(data) {
@@ -245,11 +327,13 @@ $(document).ready(function() {
     createGraphs();
   });
 
+  /* Something is wrong here when no panning or zooming happend and it reloads
   setInterval(function() {
     for (var g in graphs) {
       updateChart(graphs[g]);
     }
   }, 20000);
+  */
 
   $(document).keydown(function(event) {
     if (event.shiftKey) {

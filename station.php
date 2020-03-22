@@ -40,7 +40,7 @@ class Station {
         return $missing;
     }
 
-    public function getData($types = null, $startTime = null, $endTime = null, $stepSize = null) {
+    public function getData($types = null, $startTime = null, $endTime = null, $stepSize = null, $subTypes = null) {
         global $conn;
         if (is_string($types)) {
             $types = explode(',', $types);
@@ -48,9 +48,40 @@ class Station {
             $types = null;
         }
 
+        $stepSize = parseTimeDelta($stepSize);
+        if ($stepSize <= 1) {
+            $stepSize = null;
+        }
+
+        if (is_string($subTypes)) {
+            $subTypes = explode(',', $subTypes);
+        } else if (!is_array($subTypes)) {
+            $subTypes = null;
+        }
+        if ($subTypes === null || count($subTypes) == 0) {
+            $subTypes = array('data');
+            $stepSize = null;
+        }
+
+        $subTypesMap = array(
+            'data' => "AVG(value) * conversion_factor",
+            'min'  => "MIN(value) * conversion_factor",
+            'max'  => "MAX(value) * conversion_factor",
+            'stddev'  => "STDDEV_POP(value) * conversion_factor",
+            'variance'  => "VAR_POP(value) * conversion_factor"
+        );
+
+        $subTypesSql = array();
+        foreach ($subTypes as $subType) {
+            $subTypesSql[] = $subTypesMap[$subType] . " AS v_" . $subType;
+        }
+
         $filterQuery = array("station_id = " . strval($this->id));
 
         if ($startTime instanceof DateTime) {
+            if (is_int($stepSize)) {
+                $startTime->sub(new DateInterval("PT${stepSize}S"));
+            }
             $startTime = $startTime->format("Y-m-d H:i:s");
             $filterQuery[] = "`timestamp` >= '" . $startTime . "'";
         } else {
@@ -58,6 +89,9 @@ class Station {
         }
 
         if ($endTime instanceof DateTime) {
+            if (is_int($stepSize)) {
+                $endTime->add(new DateInterval("PT${stepSize}S"));
+            }
             $endTime = $endTime->format("Y-m-d H:i:s");
             $filterQuery[] = "`timestamp` <= '" . $endTime . "'";
         } else {
@@ -77,9 +111,11 @@ class Station {
                         'id' => $row->id
                     );
                     $data[$row->name] = array(
-                        'data' => array(),
                         'unit' => $row->unit
                     );
+                    foreach ($subTypes as $subType) {
+                        $data[$row->name][$subType] = array();
+                    }
                 }
             }
             $result->close();
@@ -97,25 +133,52 @@ class Station {
         }
         
         $filterQuerySql = implode(" AND ", $filterQuery);
+
+        if ($stepSize === null) {
+            $timegrouping = "`timestamp`";
+            $timeselect   = "MIN(`timestamp`) AS `timestamp`";
+        } else {
+            $halfStep = strval(floor($stepSize / 2));
+            $timegrouping = "(UNIX_TIMESTAMP(`timestamp`) - " . $halfStep . ") DIV " . $stepSize;
+            $timeselect   = "ADDTIME(MIN(`timestamp`), " . $halfStep . ") AS `timestamp`";
+        }
                
         $counter = 0;
-        if ($result = $conn->query("SELECT `timestamp`, name, AVG(value) * conversion_factor AS value FROM data JOIN type ON data.type_id = type.id WHERE " . $filterQuerySql . " GROUP BY `timestamp`, type_id ORDER BY `timestamp` ASC, type_id ASC;")) {
+        $sqlQuery = "
+                    SELECT
+                        " . $timeselect . ",
+                        name,
+                        " . implode(", ", $subTypesSql) . "
+                    FROM
+                        data JOIN type ON data.type_id = type.id
+                    WHERE
+                        " . $filterQuerySql . " 
+                    GROUP BY
+                        " . $timegrouping . ",
+                        type_id
+                    ORDER BY
+                        `timestamp` ASC, type_id ASC;";
+        if ($result = $conn->query($sqlQuery)) {
             $lastTimestamp = null;
-            while ($row = $result->fetch_object()) {
-                $timestamp = new DateTime($row->timestamp);
+            while ($row = $result->fetch_assoc()) {
+                $timestamp = new DateTime($row['timestamp']);
 
                 if ($timestamp != $lastTimestamp) {
                     foreach($allTypes as $typeInfo) {
                         $typeName = $typeInfo['name'];
-                        if (count($data[$typeName]['data']) < $counter) {
-                            $data[$typeName]['data'][] = null;
+                        foreach ($subTypes as $subType) {
+                            if (count($data[$typeName][$subType]) < $counter) {
+                                $data[$typeName][$subType][] = null;
+                            }
                         }
                     }
                     $data['timestamp'][] = $timestamp->format(DateTime::ISO8601);
                     $counter++;
                 }
 
-                $data[$row->name]['data'][] = $row->value;
+                foreach ($subTypes as $subType) {
+                    $data[$row['name']][$subType][] = $row["v_" . $subType];
+                }
                 
                 $lastTimestamp = $timestamp;
             }
