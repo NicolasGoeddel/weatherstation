@@ -9,7 +9,7 @@ include('header.php');
 <div class="wrapper">
     <div id="sidebar">
         <div class="sidebar-header">
-            <h3>Weatherstation</h3>
+            <h3>Weather station</h3>
         </div>
 
         <ul class="list-unstyled components">

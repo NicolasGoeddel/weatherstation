@@ -20,15 +20,95 @@ The client code is available in the repository weatherstation-client (TODO).
 
 The installation process is based on my own setup. Because I installed and developed it in a more complicated setup some steps might be not correct for your setup. Feel free to create a pull request to make some corrections.
 
+### tl;dr
+Replace every occurence of `YOUR_PASSWORD` with the password you want to use for your database user.
+```shell
+pi@raspberry:~ $ sudo apt install mariadb-server php-fpm apache2 php-mbstring php-json php7.3-opcache php-mysql git
+pi@raspberry:~ $ sudo mariadb
+MariaDB [(none)]> create database weatherstation;
+MariaDB [(none)]> create user weatherstation@localhost identified by 'YOUR_PASSWORD';
+MariaDB [(none)]> grant all privileges on weatherstation.* to weathestation@localhost;
+MariaDB [(none)]> quit;
+pi@raspberry:~ $ sudo useradd -ms/bin/bash weatherstation
+pi@raspberry:~ $ sudo su weatherstation
+weatherstation@raspberry:/home/pi $ cd ~
+weatherstation@raspberry:~ $ echo -e "[client]\npassword=YOUR_PASSWORD" > .my.cnf
+weatherstation@raspberry:~ $ chmod 640 .my.cnf
+weatherstation@raspberry:~ $ mkdir htdocs
+weatherstation@raspberry:~/htdocs $ cd htdocs
+weatherstation@raspberry:~ $ git clone https://github.com/NicolasGoeddel/weatherstation-server.git
+weatherstation@raspberry:~ $ cd weatherstation-server
+weatherstation@raspberry:~/htdocs/weatherstation-server $ mariadb weatherstation < database-init.sql
+weatherstation@raspberry:~/htdocs/weatherstation-server $ cp config.sample.php config.php
+weatherstation@raspberry:~/htdocs/weatherstation-server $ nano config.php
+```
+```php
+<?php
+$baseUrl =  "//{$_SERVER['HTTP_HOST']}/weatherstation";
+
+$db = array('hostname' => 'localhost',
+            'port' => 3306,
+            'username' => 'weatherstation',
+            'password' => 'YOUR_PASSWORD',
+            'database' => 'weatherstation');
+
+?>
+```
+```shell
+weatherstation@raspberry:~/htdocs/weatherstation-server $ exit
+pi@raspberry:~ $ sudo su
+root@raspberry:/home/pi# nano /etc/php/7.3/fpm/pool.d/weatherstation.conf
+```
+Instead of creating the file exactly like this you can also copy `www.conf` and change only the lines you need like so:
+```
+[weatherstation]
+user = weatherstation
+group = weatherstation
+listen = /run/php/php-fpm-weatherstation.sock
+listen.owner = www-data
+listen.group = www-data
+;listen.mode = 0660
+
+pm = dynamic
+pm.max_children = 5
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+```
+```shell
+root@raspberry:/home/pi# systemctl reload php7.3-fpm
+root@raspberry:/home/pi# cd /etc/apache2/conf-available
+root@raspberry:/etc/apache2/conf-available# wget https://gist.githubusercontent.com/NicolasGoeddel/9d16e65c064d4a8b901ff7dd55566a18/raw/16dc18ca43aa5d37d8e7f87901bce58259fa5c5e/easy-php-fpm.conf
+... virtualhost anpassen
+root@raspberry:/etc/apache2/conf-available# a2enconf easy-php-fpm
+root@raspberry:/etc/apache2/conf-available# a2enmod macro rewrite proxy_fcgi
+root@raspberry:/etc/apache2/conf-available# nano ../sites-enabled/000-default.conf
+```
+```xml
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        Use PHPAliasSock /weatherstation /home/weatherstation/htdocs/weatherstation-server php-fpm-weatherstation.sock
+</VirtualHost>
+```
+```shell
+root@raspberry:/etc/apache2/conf-available# systemctl restart apache2
+```
+
 ### MySQL
 
-```bash
+```shell
 $ sudo apt install mysql-server
 $ sudo mysql
 > create database weatherstation;
 > create user weatherstation@localhost identified by 'YOUR_PASSWORD';
 > grant all privileges on weatherstation.* to weathestation@localhost;
 > quit;
+
 ```
 
 At the moment you need to create the tables manually using the file `database_init.sql` inside this repository.

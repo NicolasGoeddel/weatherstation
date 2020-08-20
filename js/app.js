@@ -252,6 +252,10 @@ function createGraphs() {
             }
           }],
           yAxes: [{
+            ticks: {
+              suggestedMin: allData[type].typical_min,
+              suggestedMax: allData[type].typical_max
+            },
             position: 'left',
             scaleLabel: {
               display: true,
@@ -318,7 +322,7 @@ $(document).ready(function() {
 
   getData({
     station: selectedStation,
-    start: moment().subtract(10, 'days'),
+    start: moment().subtract(2, 'days'),
     end: moment().add(1, 'days')
   },
   function(data) {

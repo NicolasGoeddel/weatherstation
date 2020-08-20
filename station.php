@@ -48,9 +48,22 @@ class Station {
             $types = null;
         }
 
-        $stepSize = parseTimeDelta($stepSize);
-        if ($stepSize <= 1) {
-            $stepSize = null;
+        if (startsWith($stepSize, 'auto')) {
+            $t = explode(':', $stepSize);
+            if (count($t) == 1) {
+                $autoStepSize = 100;
+            } else {
+                $autoStepSize = intval($t[1]);
+                if ($autoStepSize < 1) {
+                    $autoStepSize = 1;
+                }
+            }
+        } else {
+            $autoStepSize = null;
+            $stepSize = parseTimeDelta($stepSize);
+            if ($stepSize <= 1) {
+                $stepSize = null;
+            }
         }
 
         if (is_string($subTypes)) {
@@ -103,18 +116,60 @@ class Station {
         $data = array('timestamp' => array());
         $allTypes = array();
 
-        if ($result = $conn->query("Select DISTINCT name, type.id AS id, unit FROM data JOIN type ON data.type_id = type.id WHERE " . $filterQuerySql . " ORDER BY type_id ASC")) {
+        $timeRange = array(
+            'min' => null,
+            'max' => null
+        );
+
+        if ($result = $conn->query("
+            SELECT
+                name,
+                type.id AS id,
+                unit,
+                typical_min,
+                typical_max,
+                conversion_factor,
+                COUNT(data.id) AS count,
+                MIN(`timestamp`) As time_min,
+                MAX(`timestamp`) AS time_max
+            FROM
+                data JOIN type ON data.type_id = type.id
+            WHERE " . $filterQuerySql . "
+            GROUP BY
+                type.id
+            ORDER BY
+                type_id ASC")) {
             while ($row = $result->fetch_object()) {
                 if ($types === null or in_array($row->name, $types)) {
                     $allTypes[] = array(
                         'name' => $row->name,
                         'id' => $row->id
                     );
+
                     $data[$row->name] = array(
                         'unit' => $row->unit
                     );
+                    if ($row->typical_min !== null) {
+                        $data[$row->name]['typical_min'] = $row->typical_min * $row->conversion_factor;
+                    } else {
+                        $data[$row->name]['typical_min'] = null;
+                    };
+                    if ($row->typical_max !== null) {
+                        $data[$row->name]['typical_max'] = $row->typical_max * $row->conversion_factor;
+                    } else {
+                        $data[$row->name]['typical_max'] = null;
+                    }
                     foreach ($subTypes as $subType) {
                         $data[$row->name][$subType] = array();
+                    }
+
+                    $time_min = new DateTime($row->time_min);
+                    if ($timeRange['min'] === null || $time_min->getTimestamp() < $timeRange['min']->getTimestamp()) {
+                        $timeRange['min'] = $time_min;
+                    }
+                    $time_max = new DateTime($row->time_max);
+                    if ($timeRange['max'] === null || $time_max->getTimestamp() > $timeRange['max']->getTimestamp()) {
+                        $timeRange['max'] = $time_max;
                     }
                 }
             }
