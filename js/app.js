@@ -6,7 +6,7 @@ var allData = null;
 
 function getData(config, success) {
 
-  const timeFormat = 'YYYY-MM-DDTHH:mm:ss';
+  
 
   data = {
     module: 'data',
@@ -58,34 +58,33 @@ function getData(config, success) {
 };
 
 function reloadChart({chart}) {
-  let meta = chart.getDatasetMeta(0);
   let typename = chart.options.typename;
   let typecolor = chart.options.typecolor;
 
-  let axis = chart.scales[meta.xAxisID];
-  let timestamps = axis._timestamps.data;
+  let axis = chart.scales.time;
+  //let timestamps = axis._timestamps.data;
 
   let subtypes = ['data'];
   let stepsize = '1';
-  if (selectedInterval === 'all' || selectedInterval === '') {
+  if (gConf.interval === 'all' || gConf.interval === '') {
     stepsize = '1';
     subtypes = ['data'];
-  } else if (selectedInterval === 'auto') {
+  } else if (gConf.interval === 'auto') {
     //todo
   } else {
-    stepsize = selectedInterval;
+    stepsize = gConf.interval;
     subtypes = ['data', 'min', 'max'];
   }
 
   oldAxis = {min: axis.min, max: axis.max};
 
   getData({
-    station: selectedStation,
+    station: gConf.station,
     start: moment(axis.min),
     end: moment(axis.max),
     types: typename,
     subtypes: subtypes,
-    stepsize: selectedInterval
+    stepsize: gConf.interval
   }, function(data) {
     chart.data.datasets = subtypes.map(function(subtype, index) {
       let fill = false;
@@ -118,22 +117,46 @@ function reloadChart({chart}) {
   })
 };
 
+function syncChart({chart}) {
+  return;
+  if (gConf.sync) {
+    for (let g in graphs) {
+      if (graphs[g] != chart) {
+        graphs[g].scales.time.min = chart.scales.time.min;
+        graphs[g].scales.time.max = chart.scales.time.max;
+        graphs[g].update();
+        console.log('update ' + g + " with " + chart.scales.time.min + " and " + chart.scales.time.max);
+      }
+    }
+  }
+}
+
 function updateChart({chart}) {
 
   reloadChart(chart);
+
+  if (gConf.sync) {
+    for (let g in graphs) {
+      if (graphs[g] != chart) {
+        graphs[g].scales.time.min = chart.scales.time.min;
+        graphs[g].scales.time.max = chart.scales.time.max;
+        reloadChart(graphs[g]);
+      }
+    } 
+  }
+  
   return;
 
-  let meta = chart.getDatasetMeta(0);
   let typename = chart.options.typename;
 
-  let axis = chart.scales[meta.xAxisID];
+  let axis = chart.scales.time
   let timestamps = axis._timestamps.data;
   let data = {min: timestamps[0], max: timestamps[timestamps.length - 1]};
   
   if (axis.max > data.max) {
     // Es wurde nach links verschoben, d.h. rechts fehlen jetzt Daten.
     getData({
-      station: selectedStation,
+      station: gConf.station,
       start: moment(data.max + 1000),
       end: moment(axis.max),
       types: typename
@@ -205,6 +228,7 @@ function createGraphs() {
         spanGaps: false,
         scales: {
           xAxes: [{
+            id: 'time',
             type: 'time',
             distribution: 'linear',
             scaleLabel: {
@@ -290,10 +314,11 @@ function createGraphs() {
                 x: null,
                 y: null
               },
+              onPan: syncChart,
               onPanComplete: updateChart
             },
             zoom: {
-              enabled: true,
+              enabled: false,
               mode: 'x',
               speed: 0.1,
               rangeMin: {
@@ -304,6 +329,7 @@ function createGraphs() {
                 x: null,
                 y: null
               },
+              onZoom: syncChart,
               onZoomComplete: updateChart
             }
           }
@@ -320,10 +346,12 @@ $(document).ready(function() {
   
   moment.locale(locale);
 
+  parseHash()
+
   getData({
-    station: selectedStation,
-    start: moment().subtract(2, 'days'),
-    end: moment().add(1, 'days')
+    station: gConf.station,
+    start: gConf.start,
+    end: gConf.end
   },
   function(data) {
     data['timestamp'] = data['timestamp'].map(x => new moment(x));
@@ -341,8 +369,9 @@ $(document).ready(function() {
 
   $(document).keydown(function(event) {
     if (event.shiftKey) {
-      for (var g in graphs) {
+      for (let g in graphs) {
         graphs[g].options.plugins.zoom.zoom.enabled = true;
+        graphs[g].update();
         console.log('enabled');
       }
     }
@@ -350,10 +379,15 @@ $(document).ready(function() {
 
   $(document).keyup(function(event) {
     if (event.shiftKey) {
-      for (var g in graphs) {
+      for (let g in graphs) {
         graphs[g].options.plugins.zoom.zoom.enabled = false;
+        graphs[g].update();
         console.log('disabled');
       }
     }
   });
+
+  $(window).on('hashchange', function(e) {
+    console.log(e)
+  })
 });
